@@ -1,115 +1,224 @@
-import { EventEmitter } from "events";
-import { RTCPeerConnection } from "wrtc";
-import { SdpBuilder } from "./sdp-builder";
-import { parseSdp } from "./utils";
-import { JoinVoiceCallCallback } from "./types";
-import { Stream } from "./stream";
+import { Api, TelegramClient } from "telegram";
+import { Readable } from "stream";
+import { Stream, TGCalls } from "./tgcalls";
+import { editParticipant, getFullChat, joinCall, leaveCall } from "./utils";
+import { EditParams, JoinParams, Listeners } from "./types";
 
-export { Stream };
+export class GramTGCalls {
+  private call?: Api.InputGroupCall;
+  private tgcalls?: TGCalls<any>;
+  private _stream?: Stream;
+  private track?: MediaStreamTrack;
 
-export class TGCalls<T> extends EventEmitter {
-  #connection?: RTCPeerConnection;
-  #params: T;
-
-  joinVoiceCall?: JoinVoiceCallCallback<T>;
-
-  constructor(params: T) {
-    super();
-    this.#params = params;
+  constructor(
+    public client: TelegramClient,
+    public chat: Api.TypeEntityLike,
+  ) {
+    this.client.addEventHandler(this.updateHandler);
   }
 
-  async start(
-    audio: MediaStreamTrack,
-    video: MediaStreamTrack,
-  ): Promise<void> {
-    if (this.#connection) {
-      throw new Error("Connection already started");
-    } else if (!this.joinVoiceCall) {
-      throw new Error(
-        "Please set the `joinVoiceCall` callback before calling `start()`",
-      );
-    }
-
-    this.#connection = new RTCPeerConnection();
-    this.#connection.oniceconnectionstatechange = async () => {
-      this.emit(
-        "iceConnectionState",
-        this.#connection?.iceConnectionState,
-      );
-
-      switch (this.#connection?.iceConnectionState) {
-        case "closed":
-        case "failed":
-          this.emit("hangUp");
-          break;
+  private updateHandler(update: Api.TypeUpdate) {
+    if (update instanceof Api.UpdateGroupCall) {
+      if (update.call instanceof Api.GroupCallDiscarded) {
+        this.close();
+        this.reset();
       }
-    };
+    }
+  }
 
-    this.#connection.addTrack(audio);
-    this.#connection.addTrack(video);
+  /**
+   * Starts streaming the provided medias with their own options.
+   *
+   * @param readable The readable to stream
+   * @param opts Options
+   */
+  async stream(
+    readable?: Readable,
+    opts?: {
+      joinParams?: JoinParams;
+      listeners?: Listeners;
+      bitsPerSample?: number;
+      sampleRate?: number;
+      channelCount?: number;
+      almostFinishedTrigger?: number;
+    },
+  ) {
+    if (!this.tgcalls) {
+      this.tgcalls = new TGCalls({});
+      this.tgcalls.joinVoiceCall = async (payload) => {
+        const fullChat = await getFullChat(this.client, this.chat);
 
-    const offer = await this.#connection.createOffer({
-      offerToReceiveVideo: true,
-      offerToReceiveAudio: true,
-    });
+        if (!fullChat.call) {
+          throw new Error("No active call");
+        }
 
-    await this.#connection.setLocalDescription(offer);
+        this.call = fullChat.call;
 
-    if (!offer.sdp) {
-      return;
+        return await joinCall(this.client, this.call, payload, {
+          ...opts?.joinParams,
+          joinAs: opts?.joinParams?.joinAs || fullChat.groupcallDefaultJoinAs,
+        });
+      };
     }
 
-    const { ufrag, pwd, hash, fingerprint, source } = parseSdp(
-      offer.sdp,
-    );
+    if (!this._stream) {
+      this._stream = new Stream(readable, {
+        ...opts,
+      });
 
-    if (
-      !ufrag ||
-      !pwd ||
-      !hash ||
-      !fingerprint ||
-      !source
-    ) {
+      this.track = this._stream.createTrack();
+
+      if (opts?.listeners?.onError) {
+        this._stream.on("error", opts.listeners.onError);
+      }
+
+      if (opts?.listeners?.onFinish) {
+        this._stream.on("finish", opts.listeners.onFinish);
+      }
+    } else {
+      this._stream?.setReadable(readable);
       return;
     }
-
-    let joinVoiceCallResult;
 
     try {
-      joinVoiceCallResult = await this.joinVoiceCall({
-        ufrag,
-        pwd,
-        hash,
-        setup: "active",
-        fingerprint,
-        source,
-        params: this.#params,
-      });
-    } catch (error) {
-      this.close();
-      throw error;
+      await this.tgcalls.start(this.track);
+    } catch (err) {
+      this.reset();
+      throw err;
     }
-
-    if (!joinVoiceCallResult || !joinVoiceCallResult.transport) {
-      this.close();
-      throw new Error("No transport found");
-    }
-
-    const sessionId = Date.now();
-    const conference = {
-      sessionId,
-      transport: joinVoiceCallResult.transport,
-      ssrcs: [{ ssrc: source }],
-    };
-
-    await this.#connection.setRemoteDescription({
-      type: "answer",
-      sdp: SdpBuilder.fromConference(conference),
-    });
   }
 
-  close() {
-    this.#connection?.close();
-    this.#connection = undefined;
+  /**
+   * Pauses the stream. Returns `null` if there is not in call, `false` if already paused or `true` if successful.
+   */
+  pause() {
+    if (!this._stream) {
+      return null;
+    }
+
+    if (!this._stream.paused) {
+      this._stream.pause();
+      return true;
+    }
+
+    return false;
   }
+
+  /**
+   * Resumes the stream. Returns `null` if there is not in call, `false` if not paused or `true` if successful.
+   */
+  resume() {
+    if (!this._stream) {
+      return null;
+    }
+
+    if (this._stream.paused) {
+      this._stream.pause();
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Mutes the stream. Returns `null` if there is not in call, `false` if already muted or `true` if successful.
+   */
+  mute() {
+    if (!this.track) {
+      return null;
+    }
+
+    if (this.track.enabled) {
+      this.track.enabled = false;
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Unmutes the stream. Returns `null` if not in call, `false` if already muted or `true` if successful.
+   */
+  unmuteAudio() {
+    if (!this.track) {
+      return null;
+    }
+
+    if (!this.track.enabled) {
+      this.track.enabled = true;
+      return true;
+    }
+
+    return false;
+  }
+
+  private close() {
+    this._stream?.stop();
+    this.tgcalls?.close();
+  }
+
+  private reset() {
+    this.call = this.tgcalls = this.track = this
+      .track = undefined;
+  }
+
+  /**
+   * Stops the streams, closes the WebRTC connection, sends leave request to Telegram and frees up resources. Returns `false` if not in call or `true` if successful.
+   */
+  async stop() {
+    if (!this.call) {
+      return false;
+    }
+
+    this._stream?.stop();
+    this.close();
+    await leaveCall(this.client, this.call);
+    this.reset();
+    return true;
+  }
+
+  /**
+   * Tells if the audio has finished streaming. Returns `null` if not in call, `true` if finished or `false` if not.
+   */
+  get finished() {
+    if (!this._stream) {
+      return null;
+    }
+
+    return this._stream.finished;
+  }
+
+  /**
+   * Tells if the stream was stopped. Returns `null` if not in call, `true` if stopped or `false` if not.
+   */
+  get stopped() {
+    if (!this._stream) {
+      return null;
+    }
+
+    return this._stream.stopped;
+  }
+
+  /**
+   * Edits a participant.
+   *
+   * @param params New params for the participant
+   * @param participant The participant to edit (Which will be you if not passed.)
+   */
+  async editParticipant(
+    params: EditParams,
+    participant: Api.TypeEntityLike = "me",
+  ) {
+    if (!this.call) {
+      return false;
+    }
+
+    await editParticipant(this.client, this.call, participant, params);
+    return true;
+  }
+
+  /**
+   * Alias for `edit`
+   */
+  edit = this.editParticipant;
 }

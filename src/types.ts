@@ -1,3 +1,5 @@
+import { Api } from "telegram";
+
 export interface StreamOptions {
   bitsPerSample?: number;
   sampleRate?: number;
@@ -66,3 +68,23 @@ export interface JoinVoiceCallResponse {
 export type JoinVoiceCallCallback<T> = (
   payload: JoinVoiceCallParams<T>,
 ) => Promise<JoinVoiceCallResponse>;
+
+// gram-tgcalls types
+
+export interface JoinParams {
+  joinAs?: Api.TypeEntityLike;
+  muted?: boolean;
+  inviteHash?: string;
+}
+
+export interface EditParams {
+  muted?: boolean;
+  volume?: number;
+  raiseHand?: boolean;
+  presentationPaused?: boolean;
+}
+
+export interface Listeners {
+  onFinish?: () => void;
+  onError?: (error: Error) => void;
+}

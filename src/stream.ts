@@ -26,13 +26,13 @@ export class Stream extends EventEmitter {
   readonly channelCount: number;
   private almostFinishedTrigger: number;
 
-  constructor(readable?: Readable, options?: StreamOptions) {
+  constructor(readable?: Readable, opts?: StreamOptions) {
     super();
 
-    this.bitsPerSample = options?.bitsPerSample ?? 16;
-    this.sampleRate = options?.sampleRate ?? 65000;
-    this.channelCount = options?.channelCount ?? 1;
-    this.almostFinishedTrigger = options?.almostFinishedTrigger ?? 20;
+    this.bitsPerSample = opts?.bitsPerSample ?? 16;
+    this.sampleRate = opts?.sampleRate ?? 65000;
+    this.channelCount = opts?.channelCount ?? 1;
+    this.almostFinishedTrigger = opts?.almostFinishedTrigger ?? 20;
 
     this.source = new nonstandard.RTCAudioSource();
     this.cache = Buffer.alloc(0);
