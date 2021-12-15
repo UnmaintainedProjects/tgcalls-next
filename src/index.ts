@@ -1,12 +1,12 @@
 import { Api, TelegramClient } from "telegram";
 import { Readable } from "stream";
-import { Stream, TGCalls } from "./tgcalls";
+import { BaseTGCalls, Stream } from "./base_tgcalls";
 import { editParticipant, getFullChat, joinCall, leaveCall } from "./utils";
 import { EditParams, JoinParams, Listeners } from "./types";
 
-export class GramTGCalls {
+export class TGCalls {
   private call?: Api.InputGroupCall;
-  private tgcalls?: TGCalls<any>;
+  private tgcalls?: BaseTGCalls<any>;
   private _stream?: Stream;
   private track?: MediaStreamTrack;
 
@@ -44,7 +44,7 @@ export class GramTGCalls {
     },
   ) {
     if (!this.tgcalls) {
-      this.tgcalls = new TGCalls({});
+      this.tgcalls = new BaseTGCalls({});
       this.tgcalls.joinVoiceCall = async (payload) => {
         const fullChat = await getFullChat(this.client, this.chat);
 

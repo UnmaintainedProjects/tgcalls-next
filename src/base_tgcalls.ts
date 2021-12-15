@@ -7,7 +7,7 @@ import { Stream } from "./stream";
 
 export { Stream };
 
-export class TGCalls<T> extends EventEmitter {
+export class BaseTGCalls<T> extends EventEmitter {
   #connection?: RTCPeerConnection;
   #params: T;
 
