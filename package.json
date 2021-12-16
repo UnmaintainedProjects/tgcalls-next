@@ -4,9 +4,8 @@
     "description": "Audio-only fork of tgcallsjs with direct GramJS support.",
     "main": "lib/index.js",
     "scripts": {
-        "build": "npm run prepare",
+        "build": "rm -rf lib/ && tsc",
         "test": "tsc --noEmit",
-        "prepare": "rm -rf lib/ && tsc",
         "preversion": "npm run test",
         "docs": "typedoc src/index.ts"
     },

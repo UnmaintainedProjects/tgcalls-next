@@ -11,7 +11,8 @@
         "noImplicitReturns": true,
         "noFallthroughCasesInSwitch": true,
         "forceConsistentCasingInFileNames": true,
-        "typeRoots": ["src/typings", "node_modules/@types"]
+        "typeRoots": ["src/typings", "node_modules/@types"],
+        "esModuleInterop": true
     },
     "typedocOptions": {
         "excludePrivate": true,
