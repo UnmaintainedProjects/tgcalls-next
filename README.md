@@ -31,12 +31,11 @@ const client = new TelegramClient(session, {});
 - Channels: 2
 - Bitrate: 65K or what you provided in the `StreamOptions`
 
-### Conversion with FFmpeg
-
-Audio:
+### Conversion w/ FFmpeg
 
 ```bash
 ffmpeg -i [input] -f s16le -ac 1 -ar 65K [output]
 ```
 
-Note: The example is using default values of configurable options.
+> Please note that the above example is using default values of configurable
+> options.
