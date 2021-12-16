@@ -1,56 +1,37 @@
-# tgcallsjs
+# tgcalls-next
 
-[![npm](https://img.shields.io/npm/v/tgcalls)][npm] [![Mentioned in Awesome Telegram Calls](https://awesome.re/mentioned-badge.svg)][awesome]
+[![npm](https://img.shields.io/npm/v/tgcalls-next)](https://npm.im/tgcalls-next)
 
-## Example
+TGCalls Next is a non-official, audio-only fork of the original
+[tgcallsjs](https://github.com/tgcallsjs/tgcalls), which is merged with
+[gram-tgcalls](https://github.com/tgcallsjs/gram-tgcalls) to support GramJS
+directly.
+
+## Example Usage
 
 ```ts
-import { createReadStream } from 'fs';
-import { TGCalls, Stream } from 'tgcalls';
+import { createReadStream } from "fs";
+import { TelegramClient } from "telegram";
+import { TGCalls } from "tgcalls-next";
 
-const tgcalls = new TGCalls();
+const client = new TelegramClient(session, {});
 
-tgcalls.joinVoiceCall = payload => {
-    // Somehow join voice call and get transport
+(async () => {
+  await client.start();
 
-    return transport;
-};
+  const tgcalls = new TGCalls(client, -1234567890);
 
-const audioStream = new Stream(createReadStream('audio.raw'));
-const videoStream = new Stream(createReadStream('video.raw'), {
-    video: true,
-});
-
-// See the docs for more event types
-// https://tgcallsjs.github.io/tgcalls/classes/stream.html#on
-audioStream.on('finish', () => {
-    console.log('Audio finished streaming');
-});
-
-tgcalls.start(audioStream.createTrack(), videoStream.createTrack());
+  await tgcalls.stream(createReadStream("file.raw"), { ...options });
+})();
 ```
 
-## Required media properties
+## Required Media Properties
 
-Video:
-
--   Format: `rawvideo`
--   Resolution: min 640x360, max 1280x720
--   FPS: 24 or what you provided in `StreamOptions`
-
-Audio:
-
--   Format: `s16le`
--   Channels: 2
--   Bitrate: 65K or what you provided in `StreamOptions`
+- Format: `s16le`
+- Channels: 2
+- Bitrate: 65K or what you provided in the `StreamOptions`
 
 ### Conversion with FFmpeg
-
-Video:
-
-```bash
-ffmpeg -i [input] -f rawvideo -vf scale=640:-1 -r 24 [output]
-```
 
 Audio:
 
@@ -58,28 +39,4 @@ Audio:
 ffmpeg -i [input] -f s16le -ac 1 -ar 65K [output]
 ```
 
-Or both from a video input:
-
-```bash
-ffmpeg -i [input] \
-    -f s16le -ac 1 -ar 65K [audio_output] \
-    -f rawvideo -vf scale=640:-1 -r 24 [video_output]
-```
-
-Note: these examples are using default values of configurable options.
-
-## Related projects
-
--   [gram-tgcalls]: connects tgcallsjs with [GramJS] and makes using this library super easy.
-
-## Credits
-
-Big thanks to [@evgeny-nadymov] for allowing us to use their code from [telegram-react], and [@Laky-64] for helping write this library!
-
-[npm]: https://www.npmjs.com/package/tgcalls
-[awesome]: https://github.com/tgcalls/awesome-tgcalls
-[gram-tgcalls]: https://github.com/tgcallsjs/gram-tgcalls
-[gramjs]: https://github.com/gram-js/gramjs
-[@evgeny-nadymov]: https://github.com/evgeny-nadymov/
-[telegram-react]: https://github.com/evgeny-nadymov/telegram-react/
-[@laky-64]: https://github.com/Laky-64/
+Note: The example is using default values of configurable options.
