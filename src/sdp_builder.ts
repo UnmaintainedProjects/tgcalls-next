@@ -1,4 +1,4 @@
-import { Candidate, Conference, Ssrc, Transport } from "./types";
+import { Candidate, Conference, Transport } from "./types";
 
 export class SdpBuilder {
   #lines: string[] = [];
