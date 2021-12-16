@@ -1,4 +1,4 @@
-import { Candidate, Conference, Transport } from "./types";
+import { Candidate, Conference, Ssrc, Transport } from "./types";
 
 export class SdpBuilder {
   #lines: string[] = [];
@@ -43,7 +43,7 @@ export class SdpBuilder {
     this.add(`o=- ${sessionId} 2 IN IP4 0.0.0.0`);
     this.add("s=-");
     this.add("t=0 0");
-    this.add(`a=group:BUNDLE 0 1`);
+    this.add(`a=group:BUNDLE 0`);
     this.add("a=ice-lite");
   }
 
