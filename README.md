@@ -14,7 +14,7 @@ import { createReadStream } from "fs";
 import { TelegramClient } from "telegram";
 import { TGCalls } from "tgcalls-next";
 
-const client = new TelegramClient(session, {});
+const client = new TelegramClient(session, 0, '', {});
 
 (async () => {
   await client.start();
