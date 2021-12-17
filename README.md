@@ -7,6 +7,10 @@ TGCalls Next is a non-official, audio-only fork of the original
 [gram-tgcalls](https://github.com/tgcallsjs/gram-tgcalls) to support GramJS
 directly.
 
+## Documentation
+
+The documentation is available at <https://tgcalls-next.github.io/tgcalls>.
+
 ## Example Usage
 
 ```ts
@@ -14,7 +18,7 @@ import { createReadStream } from "fs";
 import { TelegramClient } from "telegram";
 import { TGCalls } from "tgcalls-next";
 
-const client = new TelegramClient(session, 0, '', {});
+const client = new TelegramClient(session, 0, "", {});
 
 (async () => {
   await client.start();
