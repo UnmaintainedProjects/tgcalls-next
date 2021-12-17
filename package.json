@@ -7,7 +7,7 @@
         "build": "rm -rf lib/ && tsc",
         "test": "tsc --noEmit",
         "preversion": "npm run test",
-        "docs": "typedoc src/index.ts"
+        "docs": "typedoc src/*"
     },
     "repository": {
         "type": "git",
