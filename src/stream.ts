@@ -1,162 +1,158 @@
-import { EventEmitter } from "events";
-import { Readable } from "stream";
-import { nonstandard, RTCAudioSource } from "wrtc";
-import { StreamOptions } from "./types";
+import { EventEmitter } from 'events';
+import { Readable } from 'stream';
+import { nonstandard, RTCAudioSource } from 'wrtc';
+import { StreamOptions } from './types';
 
 export declare interface Stream {
-  on(event: "pause", listener: (paused: boolean) => void): this;
-  on(event: "finish", listener: () => void): this;
-  on(event: "almost-finished", listener: () => void): this;
-  on(event: "error", listener: (error: Error) => void): this;
-  on(event: string, listener: Function): this;
+    on(event: 'pause', listener: (paused: boolean) => void): this;
+    on(event: 'finish', listener: () => void): this;
+    on(event: 'almost-finished', listener: () => void): this;
+    on(event: 'error', listener: (error: Error) => void): this;
+    on(event: string, listener: Function): this;
 }
 
 export class Stream extends EventEmitter {
-  private readonly source: RTCAudioSource;
-  private readable?: Readable;
-  private cache: Buffer;
-  private _paused = false;
-  private _finished = true;
-  private _stopped = false;
-  private _finishedLoading = false;
-  private _emittedAlmostFinished = false;
+    private readonly source: RTCAudioSource;
+    private readable?: Readable;
+    private cache: Buffer;
+    private _paused = false;
+    private _finished = true;
+    private _stopped = false;
+    private _finishedLoading = false;
+    private _emittedAlmostFinished = false;
 
-  readonly bitsPerSample: number;
-  readonly sampleRate: number;
-  readonly channelCount: number;
-  private almostFinishedTrigger: number;
+    readonly bitsPerSample: number;
+    readonly sampleRate: number;
+    readonly channelCount: number;
+    private almostFinishedTrigger: number;
 
-  constructor(readable?: Readable, opts?: StreamOptions) {
-    super();
+    constructor(readable?: Readable, opts?: StreamOptions) {
+        super();
 
-    this.bitsPerSample = opts?.bitsPerSample ?? 16;
-    this.sampleRate = opts?.sampleRate ?? 65000;
-    this.channelCount = opts?.channelCount ?? 1;
-    this.almostFinishedTrigger = opts?.almostFinishedTrigger ?? 20;
+        this.bitsPerSample = opts?.bitsPerSample ?? 16;
+        this.sampleRate = opts?.sampleRate ?? 65000;
+        this.channelCount = opts?.channelCount ?? 1;
+        this.almostFinishedTrigger = opts?.almostFinishedTrigger ?? 20;
 
-    this.source = new nonstandard.RTCAudioSource();
-    this.cache = Buffer.alloc(0);
+        this.source = new nonstandard.RTCAudioSource();
+        this.cache = Buffer.alloc(0);
 
-    this.setReadable(readable);
-    this.processData();
-  }
-
-  setReadable(readable?: Readable) {
-    if (this._stopped) {
-      throw new Error("Cannot set readable when stopped");
+        this.setReadable(readable);
+        this.processData();
     }
 
-    if (this.readable) {
-      this.readable.removeListener("data", this.dataListener);
-      this.readable.removeListener("end", this.endListener);
+    setReadable(readable?: Readable) {
+        if (this._stopped) {
+            throw new Error('Cannot set readable when stopped');
+        }
+
+        if (this.readable) {
+            this.readable.removeListener('data', this.dataListener);
+            this.readable.removeListener('end', this.endListener);
+        }
+
+        this.cache = Buffer.alloc(0);
+
+        if (readable) {
+            this._finished = false;
+            this._finishedLoading = false;
+            this._emittedAlmostFinished = false;
+            this.readable = readable;
+
+            this.readable.addListener('data', this.dataListener);
+            this.readable.addListener('end', this.endListener);
+        }
     }
 
-    this.cache = Buffer.alloc(0);
+    pause() {
+        if (this._stopped) {
+            throw new Error('Cannot pause when stopped');
+        }
 
-    if (readable) {
-      this._finished = false;
-      this._finishedLoading = false;
-      this._emittedAlmostFinished = false;
-      this.readable = readable;
-
-      this.readable.addListener("data", this.dataListener);
-      this.readable.addListener("end", this.endListener);
-    }
-  }
-
-  pause() {
-    if (this._stopped) {
-      throw new Error("Cannot pause when stopped");
+        this._paused = !this._paused;
+        this.emit('pause', this._paused);
     }
 
-    this._paused = !this._paused;
-    this.emit("pause", this._paused);
-  }
-
-  get paused() {
-    return this._paused;
-  }
-
-  finish() {
-    this._finished = true;
-    this.emit("finish");
-  }
-
-  get finished() {
-    return this._finished;
-  }
-
-  stop() {
-    this._stopped = true;
-    this.finish();
-  }
-
-  get stopped() {
-    return this._stopped;
-  }
-
-  createTrack() {
-    return this.source.createTrack();
-  }
-
-  private dataListener = ((data: any) => {
-    this.cache = Buffer.concat([this.cache, data]);
-  }).bind(this);
-
-  private endListener = (() => {
-    this._finishedLoading = true;
-  }).bind(this);
-
-  private processData() {
-    if (this._stopped) {
-      return;
+    get paused() {
+        return this._paused;
     }
 
-    const byteLength = ((this.sampleRate * this.bitsPerSample) / 8 / 100) *
-      this.channelCount;
-
-    if (
-      !this._paused &&
-      !this._finished &&
-      (this.cache.length >= byteLength || this._finishedLoading)
-    ) {
-      const buffer = this.cache.slice(0, byteLength);
-
-      this.cache = this.cache.slice(byteLength);
-
-      const samples = new Int16Array(
-        new Uint8Array(buffer).buffer,
-      );
-
-      try {
-        this.source.onData({
-          bitsPerSample: this.bitsPerSample,
-          sampleRate: this.sampleRate,
-          channelCount: this.channelCount,
-          numberOfFrames: samples.length,
-          samples,
-        });
-      } catch (error) {
-        this.emit("error", error);
-      }
+    finish() {
+        this._finished = true;
+        this.emit('finish');
     }
 
-    if (!this._finished && this._finishedLoading) {
-      if (
-        !this._emittedAlmostFinished &&
-        this.cache.length <
-          byteLength + this.almostFinishedTrigger * this.sampleRate
-      ) {
-        this._emittedAlmostFinished = true;
-        this.emit("almost-finished");
-      } else if (this.cache.length < byteLength) {
+    get finished() {
+        return this._finished;
+    }
+
+    stop() {
+        this._stopped = true;
         this.finish();
-      }
     }
 
-    setTimeout(
-      () => this.processData(),
-      10,
-    );
-  }
+    get stopped() {
+        return this._stopped;
+    }
+
+    createTrack() {
+        return this.source.createTrack();
+    }
+
+    private dataListener = ((data: any) => {
+        this.cache = Buffer.concat([this.cache, data]);
+    }).bind(this);
+
+    private endListener = (() => {
+        this._finishedLoading = true;
+    }).bind(this);
+
+    private processData() {
+        if (this._stopped) {
+            return;
+        }
+
+        const byteLength =
+            ((this.sampleRate * this.bitsPerSample) / 8 / 100) *
+            this.channelCount;
+
+        if (
+            !this._paused &&
+            !this._finished &&
+            (this.cache.length >= byteLength || this._finishedLoading)
+        ) {
+            const buffer = this.cache.slice(0, byteLength);
+
+            this.cache = this.cache.slice(byteLength);
+
+            const samples = new Int16Array(new Uint8Array(buffer).buffer);
+
+            try {
+                this.source.onData({
+                    bitsPerSample: this.bitsPerSample,
+                    sampleRate: this.sampleRate,
+                    channelCount: this.channelCount,
+                    numberOfFrames: samples.length,
+                    samples,
+                });
+            } catch (error) {
+                this.emit('error', error);
+            }
+        }
+
+        if (!this._finished && this._finishedLoading) {
+            if (
+                !this._emittedAlmostFinished &&
+                this.cache.length <
+                    byteLength + this.almostFinishedTrigger * this.sampleRate
+            ) {
+                this._emittedAlmostFinished = true;
+                this.emit('almost-finished');
+            } else if (this.cache.length < byteLength) {
+                this.finish();
+            }
+        }
+
+        setTimeout(() => this.processData(), 10);
+    }
 }

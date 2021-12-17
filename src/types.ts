@@ -1,90 +1,90 @@
-import { Api } from "telegram";
+import { Api } from 'telegram';
 
 export interface StreamOptions {
-  bitsPerSample?: number;
-  sampleRate?: number;
-  channelCount?: number;
-  almostFinishedTrigger?: number;
+    bitsPerSample?: number;
+    sampleRate?: number;
+    channelCount?: number;
+    almostFinishedTrigger?: number;
 }
 
 export interface Fingerprint {
-  hash: string;
-  fingerprint: string;
+    hash: string;
+    fingerprint: string;
 }
 
 export interface Transport {
-  ufrag: string;
-  pwd: string;
-  fingerprints: Fingerprint[];
-  candidates: Candidate[];
+    ufrag: string;
+    pwd: string;
+    fingerprints: Fingerprint[];
+    candidates: Candidate[];
 }
 
 export interface Conference {
-  sessionId: number;
-  transport: Transport;
-  ssrcs: Ssrc[];
+    sessionId: number;
+    transport: Transport;
+    ssrcs: Ssrc[];
 }
 
 export interface Candidate {
-  generation: string;
-  component: string;
-  protocol: string;
-  port: string;
-  ip: string;
-  foundation: string;
-  id: string;
-  priority: string;
-  type: string;
-  network: string;
+    generation: string;
+    component: string;
+    protocol: string;
+    port: string;
+    ip: string;
+    foundation: string;
+    id: string;
+    priority: string;
+    type: string;
+    network: string;
 }
 
 export interface Ssrc {
-  ssrc: number;
+    ssrc: number;
 }
 
 export interface Sdp {
-  fingerprint: string | null;
-  hash: string | null;
-  setup: string | null;
-  pwd: string | null;
-  ufrag: string | null;
-  source: number | null;
+    fingerprint: string | null;
+    hash: string | null;
+    setup: string | null;
+    pwd: string | null;
+    ufrag: string | null;
+    source: number | null;
 }
 
 export interface JoinVoiceCallParams<T> {
-  ufrag: string;
-  pwd: string;
-  hash: string;
-  setup: "active";
-  fingerprint: string;
-  source: number;
-  params: T;
+    ufrag: string;
+    pwd: string;
+    hash: string;
+    setup: 'active';
+    fingerprint: string;
+    source: number;
+    params: T;
 }
 
 export interface JoinVoiceCallResponse {
-  transport: Transport | null;
+    transport: Transport | null;
 }
 
 export type JoinVoiceCallCallback<T> = (
-  payload: JoinVoiceCallParams<T>,
+    payload: JoinVoiceCallParams<T>,
 ) => Promise<JoinVoiceCallResponse>;
 
 // gram-tgcalls types
 
 export interface JoinParams {
-  joinAs?: Api.TypeEntityLike;
-  muted?: boolean;
-  inviteHash?: string;
+    joinAs?: Api.TypeEntityLike;
+    muted?: boolean;
+    inviteHash?: string;
 }
 
 export interface EditParams {
-  muted?: boolean;
-  volume?: number;
-  raiseHand?: boolean;
-  presentationPaused?: boolean;
+    muted?: boolean;
+    volume?: number;
+    raiseHand?: boolean;
+    presentationPaused?: boolean;
 }
 
 export interface Listeners {
-  onFinish?: () => void;
-  onError?: (error: Error) => void;
+    onFinish?: () => void;
+    onError?: (error: Error) => void;
 }
