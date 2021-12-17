@@ -160,7 +160,7 @@ export class TGCalls {
     }
 
     private reset() {
-        this.call = this.tgcalls = this.track = this.track = undefined;
+        this.call = this.tgcalls = this._stream = this.track = undefined;
     }
 
     /**
