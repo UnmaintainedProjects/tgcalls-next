@@ -139,7 +139,7 @@ export class TGCalls {
   /**
    * Unmutes the stream. Returns `null` if not in call, `false` if already muted or `true` if successful.
    */
-  unmuteAudio() {
+  unmute() {
     if (!this.track) {
       return null;
     }
