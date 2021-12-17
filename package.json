@@ -1,6 +1,6 @@
 {
     "name": "tgcalls-next",
-    "version": "0.0.0-rc.1",
+    "version": "0.0.0-rc.2",
     "description": "Audio-only fork of tgcallsjs with direct GramJS support.",
     "main": "lib/index.js",
     "scripts": {
