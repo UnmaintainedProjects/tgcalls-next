@@ -2,3 +2,5 @@ docs/
 src/
 test/
 tsconfig.json
+.github
+.pretterrc
