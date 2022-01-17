@@ -6,6 +6,8 @@ import { AudioOptions, VideoOptions } from './types';
 
 export declare interface Stream {
     on(event: 'finish', listener: () => void): this;
+    on(event: 'finish-audio', listener: () => void): this;
+    on(event: 'finish-video', listener: () => void): this;
     on(event: 'error', listener: (err: unknown) => void): this;
     on(event: string, listener: Function): this;
 }
@@ -41,7 +43,7 @@ export class Stream extends EventEmitter {
         }
     }
 
-    constructor() {
+    constructor(public lipSync = false) {
         super();
 
         this.audioBuffer = Buffer.alloc(0);
@@ -196,7 +198,7 @@ export class Stream extends EventEmitter {
     }
 
     private audioDiff(): [boolean, number] {
-        if (this.videoTime !== undefined && !this.paused) {
+        if (this.lipSync && this.videoTime !== undefined && !this.paused) {
             const time = this.audioTime;
             const videoTime = this.videoTime;
 
@@ -296,7 +298,7 @@ export class Stream extends EventEmitter {
     }
 
     private videoDiff(): [boolean, number] {
-        if (this.audioTime !== undefined && !this.paused) {
+        if (this.lipSync && this.audioTime !== undefined && !this.paused) {
             const time = this.videoTime;
             const audioTime = this.audioTime;
 
@@ -356,6 +358,7 @@ export class Stream extends EventEmitter {
             this.audioBuffer.length < this.audioByteLength
         ) {
             this.audioFinished = true;
+            this.emit('finish-audio');
             this.finish();
         }
 
@@ -403,6 +406,7 @@ export class Stream extends EventEmitter {
             this.videoBuffer.length < this.videoByteLength
         ) {
             this.videoFinished = true;
+            this.emit('finish-video');
             this.finish();
         }
 
