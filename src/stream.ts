@@ -13,7 +13,8 @@ export declare interface Stream {
 }
 
 export class Stream extends EventEmitter {
-    private audioReadable?: Readable;
+    //#region audio
+
     private audioBuffer: Buffer;
     private readonly audioSource: RTCAudioSource;
     public readonly audioTrack: MediaStreamTrack;
@@ -23,7 +24,10 @@ export class Stream extends EventEmitter {
     private audioFinishedLoading = false;
     private audioPassedBytes = 0;
 
-    private videoReadable?: Readable;
+    //#endregion
+
+    //#region video
+
     private videoBuffer: Buffer;
     private readonly videoSource: RTCVideoSource;
     public readonly videoTrack: MediaStreamTrack;
@@ -32,6 +36,10 @@ export class Stream extends EventEmitter {
     private videoFinished = false;
     private videoFinishedLoading = false;
     private videoPassedBytes = 0;
+
+    //#endregion
+
+    //#region constructor
 
     constructor(public lipSync = false) {
         super();
@@ -55,6 +63,10 @@ export class Stream extends EventEmitter {
         };
     }
 
+    //#endregion
+
+    //#region start
+
     private _started = false;
 
     get started() {
@@ -71,11 +83,22 @@ export class Stream extends EventEmitter {
         this.processVideo();
     }
 
+    //#endregion
+
+    //#region stop
     private _stopped = false;
 
     get stopped() {
         return this._stopped;
     }
+
+    // Cannot start again after stopping.
+    stop() {
+        this._stopped = true;
+    }
+    //#endregion
+
+    //#region finish
 
     get finished() {
         return this.audioFinished && this.videoFinished;
@@ -86,6 +109,8 @@ export class Stream extends EventEmitter {
             this.emit('finish');
         }
     }
+
+    //#endregion
 
     //#region pause
 
@@ -117,6 +142,8 @@ export class Stream extends EventEmitter {
 
     //#region audio
 
+    private audioReadable?: Readable;
+
     private audioDataListener = ((data: any) => {
         this.audioBuffer = Buffer.concat([this.audioBuffer, data]);
     }).bind(this);
@@ -127,7 +154,7 @@ export class Stream extends EventEmitter {
 
     setAudio(readable: Readable, destroyPrevious = true) {
         if (this.stopped) {
-            throw new Error('Cannot set readable when stopped');
+            throw new Error('Cannot set audio when stopped');
         }
 
         if (this.audioReadable) {
@@ -238,6 +265,8 @@ export class Stream extends EventEmitter {
 
     //#region video
 
+    private videoReadable?: Readable;
+
     private videoDataListener = ((data: any) => {
         this.videoBuffer = Buffer.concat([this.videoBuffer, data]);
     }).bind(this);
@@ -248,7 +277,7 @@ export class Stream extends EventEmitter {
 
     setVideo(readable: Readable, destroyPrevious = true) {
         if (this.stopped) {
-            throw new Error('Cannot set readable when stopped');
+            throw new Error('Cannot set video when stopped');
         }
 
         if (this.videoReadable) {
@@ -432,4 +461,6 @@ export class Stream extends EventEmitter {
 
         setTimeout(() => this.processVideo(), ms > 0 ? ms : 0);
     }
+
+    //#endregion
 }
