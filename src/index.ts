@@ -171,7 +171,6 @@ export class TGCalls {
             return false;
         }
 
-        this._stream?.stop();
         this.close();
         await leaveCall(this.client, this.call);
         this.reset();
