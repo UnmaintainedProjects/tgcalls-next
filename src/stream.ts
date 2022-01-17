@@ -33,16 +33,6 @@ export class Stream extends EventEmitter {
     private videoFinishedLoading = false;
     private videoPassedBytes = 0;
 
-    get finished() {
-        return this.audioFinished && this.videoFinished;
-    }
-
-    private finish() {
-        if (this.finished) {
-            this.emit('finish');
-        }
-    }
-
     constructor(public lipSync = false) {
         super();
 
@@ -71,6 +61,44 @@ export class Stream extends EventEmitter {
         return this._stopped;
     }
 
+    get finished() {
+        return this.audioFinished && this.videoFinished;
+    }
+
+    private finish() {
+        if (this.finished) {
+            this.emit('finish');
+        }
+    }
+
+    //#region pause
+
+    private _paused = false;
+
+    get paused() {
+        return this._paused;
+    }
+
+    pause() {
+        if (this._paused) {
+            return false;
+        }
+
+        this._paused = true;
+        return true;
+    }
+
+    resume() {
+        if (!this._paused) {
+            return false;
+        }
+
+        this._paused = false;
+        return true;
+    }
+
+    //#endregion
+
     //#region audio
 
     private audioDataListener = ((data: any) => {
@@ -81,7 +109,7 @@ export class Stream extends EventEmitter {
         this.audioFinishedLoading = true;
     }).bind(this);
 
-    setAudio(readable: Readable, destroyPrevious?: boolean) {
+    setAudio(readable: Readable, destroyPrevious = true) {
         if (this.stopped) {
             throw new Error('Cannot set readable when stopped');
         }
@@ -104,7 +132,7 @@ export class Stream extends EventEmitter {
         this.audioReadable.addListener('end', this.audioEndListener);
     }
 
-    removeAudio(destroy?: boolean) {
+    removeAudio(destroy = true) {
         if (this.audioReadable) {
             this.audioReadable.removeListener('data', this.audioDataListener);
             this.audioReadable.removeListener('end', this.audioEndListener);
@@ -132,30 +160,6 @@ export class Stream extends EventEmitter {
         }
 
         return this.audioBuffer.length < this.audioByteLength * 50;
-    }
-
-    private _paused = false;
-
-    get paused() {
-        return this._paused;
-    }
-
-    pause() {
-        if (this._paused) {
-            return false;
-        }
-
-        this._paused = true;
-        return true;
-    }
-
-    resume() {
-        if (!this._paused) {
-            return false;
-        }
-
-        this._paused = false;
-        return true;
     }
 
     mute() {
@@ -226,7 +230,7 @@ export class Stream extends EventEmitter {
         this.videoFinishedLoading = true;
     }).bind(this);
 
-    setVideo(readable: Readable, destroyPrevious?: boolean) {
+    setVideo(readable: Readable, destroyPrevious = true) {
         if (this.stopped) {
             throw new Error('Cannot set readable when stopped');
         }
@@ -249,7 +253,7 @@ export class Stream extends EventEmitter {
         this.videoReadable.addListener('end', this.videoEndListener);
     }
 
-    removeVideo(destroy?: boolean) {
+    removeVideo(destroy = true) {
         if (this.videoReadable) {
             this.videoReadable.removeListener('data', this.videoDataListener);
             this.videoReadable.removeListener('end', this.videoEndListener);
