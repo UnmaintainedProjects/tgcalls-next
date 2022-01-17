@@ -19,7 +19,7 @@ export class TGCalls<T> extends EventEmitter {
 
     async start(stream: Stream): Promise<void> {
         if (this.#connection) {
-            throw new Error('Connection already started');
+            throw new Error('Already started');
         } else if (!this.joinVoiceCall) {
             throw new Error(
                 'Please set the `joinVoiceCall` callback before calling `start()`',

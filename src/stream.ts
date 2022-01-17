@@ -55,6 +55,22 @@ export class Stream extends EventEmitter {
         };
     }
 
+    private _started = false;
+
+    get started() {
+        return this._started;
+    }
+
+    start() {
+        if (this.started) {
+            throw new Error('Already started');
+        }
+
+        this._started = true;
+        this.processAudio();
+        this.processVideo();
+    }
+
     private _stopped = false;
 
     get stopped() {
@@ -80,7 +96,7 @@ export class Stream extends EventEmitter {
     }
 
     pause() {
-        if (this._paused) {
+        if (this.paused) {
             return false;
         }
 
@@ -89,7 +105,7 @@ export class Stream extends EventEmitter {
     }
 
     resume() {
-        if (!this._paused) {
+        if (!this.paused) {
             return false;
         }
 
