@@ -26,7 +26,6 @@
     },
     "dependencies": {
         "@mapbox/node-pre-gyp": "^1.0.8",
-        "telegram": "^2.4.1",
         "wrtc": "^0.4.7"
     }
 }

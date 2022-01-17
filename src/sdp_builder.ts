@@ -24,8 +24,8 @@ export class SdpBuilder {
         this.#newLine.push(word);
     }
 
-    private addJoined(separator = '') {
-        this.add(this.#newLine.join(separator));
+    private addJoined(sep = '') {
+        this.add(this.#newLine.join(sep));
         this.#newLine = [];
     }
 
@@ -43,7 +43,7 @@ export class SdpBuilder {
         this.add(`o=- ${sessionId} 2 IN IP4 0.0.0.0`);
         this.add('s=-');
         this.add('t=0 0');
-        this.add(`a=group:BUNDLE 0`);
+        this.add(`a=group:BUNDLE 0 1`);
         this.add('a=ice-lite');
     }
 
@@ -51,20 +51,20 @@ export class SdpBuilder {
         this.add(`a=ice-ufrag:${transport.ufrag}`);
         this.add(`a=ice-pwd:${transport.pwd}`);
 
-        for (let fingerprint of transport.fingerprints) {
+        for (const fingerprint of transport.fingerprints) {
             this.add(
                 `a=fingerprint:${fingerprint.hash} ${fingerprint.fingerprint}`,
             );
             this.add(`a=setup:passive`);
         }
 
-        let candidates = transport.candidates;
-        for (let candidate of candidates) {
+        for (const candidate of transport.candidates) {
             this.addCandidate(candidate);
         }
     }
 
     addSsrcEntry(transport: Transport) {
+        // Audio
         this.add(`m=audio 1 RTP/SAVPF 111 126`);
         this.add('c=IN IP4 0.0.0.0');
         this.add(`a=mid:0`);
@@ -77,6 +77,39 @@ export class SdpBuilder {
         this.add('a=rtcp-fb:111 transport-cc');
         this.add('a=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level');
         this.add('a=recvonly');
+        // End audio
+
+        // Video
+        this.add(`m=video 1 RTP/SAVPF 100 101 102 103`);
+        this.add('c=IN IP4 0.0.0.0');
+        this.add(`a=mid:1`);
+        this.addTransport(transport);
+
+        // VP8
+        this.add('a=rtpmap:100 VP8/90000/1');
+        this.add('a=fmtp:100 x-google-start-bitrate=800');
+        this.add('a=rtcp-fb:100 goog-remb');
+        this.add('a=rtcp-fb:100 transport-cc');
+        this.add('a=rtcp-fb:100 ccm fir');
+        this.add('a=rtcp-fb:100 nack');
+        this.add('a=rtcp-fb:100 nack pli');
+        this.add('a=rtpmap:101 rtx/90000');
+        this.add('a=fmtp:101 apt=100');
+
+        // VP9
+        this.add('a=rtpmap:102 VP9/90000/1');
+        this.add('a=rtcp-fb:102 goog-remb');
+        this.add('a=rtcp-fb:102 transport-cc');
+        this.add('a=rtcp-fb:102 ccm fir');
+        this.add('a=rtcp-fb:102 nack');
+        this.add('a=rtcp-fb:102 nack pli');
+        this.add('a=rtpmap:103 rtx/90000');
+        this.add('a=fmtp:103 apt=102');
+        // End video
+
+        this.add('a=recvonly');
+        this.add('a=rtcp:1 IN IP4 0.0.0.0');
+        this.add('a=rtcp-mux');
     }
 
     addConference(conference: Conference) {

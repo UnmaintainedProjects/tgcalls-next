@@ -1,10 +1,13 @@
-import { Api } from 'telegram';
+export interface AudioOptions {
+    bps: number;
+    bitrate: number;
+    channels: number;
+}
 
-export interface StreamOptions {
-    bitsPerSample?: number;
-    sampleRate?: number;
-    channelCount?: number;
-    almostFinishedTrigger?: number;
+export interface VideoOptions {
+    fps: number;
+    width: number;
+    height: number;
 }
 
 export interface Fingerprint {
@@ -40,6 +43,7 @@ export interface Candidate {
 
 export interface Ssrc {
     ssrc: number;
+    ssrc_group: number[];
 }
 
 export interface Sdp {
@@ -49,6 +53,7 @@ export interface Sdp {
     pwd: string | null;
     ufrag: string | null;
     source: number | null;
+    sourceGroup: number[] | null;
 }
 
 export interface JoinVoiceCallParams<T> {
@@ -58,6 +63,7 @@ export interface JoinVoiceCallParams<T> {
     setup: 'active';
     fingerprint: string;
     source: number;
+    sourceGroup: number[];
     params: T;
 }
 
@@ -68,23 +74,3 @@ export interface JoinVoiceCallResponse {
 export type JoinVoiceCallCallback<T> = (
     payload: JoinVoiceCallParams<T>,
 ) => Promise<JoinVoiceCallResponse>;
-
-// gram-tgcalls types
-
-export interface JoinParams {
-    joinAs?: Api.TypeEntityLike;
-    muted?: boolean;
-    inviteHash?: string;
-}
-
-export interface EditParams {
-    muted?: boolean;
-    volume?: number;
-    raiseHand?: boolean;
-    presentationPaused?: boolean;
-}
-
-export interface Listeners {
-    onFinish?: () => void;
-    onError?: (error: Error) => void;
-}

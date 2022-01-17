@@ -1,13 +1,12 @@
 import { EventEmitter } from 'events';
 import { RTCPeerConnection } from 'wrtc';
+
 import { SdpBuilder } from './sdp_builder';
-import { parseSdp } from './utils';
 import { JoinVoiceCallCallback } from './types';
+import { parseSdp } from './utils';
 import { Stream } from './stream';
 
-export { Stream };
-
-export class BaseTGCalls<T> extends EventEmitter {
+export class TGCalls<T> extends EventEmitter {
     #connection?: RTCPeerConnection;
     #params: T;
 
@@ -18,7 +17,7 @@ export class BaseTGCalls<T> extends EventEmitter {
         this.#params = params;
     }
 
-    async start(audio: MediaStreamTrack): Promise<void> {
+    async start(stream: Stream): Promise<void> {
         if (this.#connection) {
             throw new Error('Connection already started');
         } else if (!this.joinVoiceCall) {
@@ -42,10 +41,11 @@ export class BaseTGCalls<T> extends EventEmitter {
             }
         };
 
-        this.#connection.addTrack(audio);
+        this.#connection.addTrack(stream.audioTrack);
+        this.#connection.addTrack(stream.videoTrack);
 
         const offer = await this.#connection.createOffer({
-            offerToReceiveVideo: false,
+            offerToReceiveVideo: true,
             offerToReceiveAudio: true,
         });
 
@@ -55,9 +55,18 @@ export class BaseTGCalls<T> extends EventEmitter {
             return;
         }
 
-        const { ufrag, pwd, hash, fingerprint, source } = parseSdp(offer.sdp);
+        const { ufrag, pwd, hash, fingerprint, source, sourceGroup } = parseSdp(
+            offer.sdp,
+        );
 
-        if (!ufrag || !pwd || !hash || !fingerprint || !source) {
+        if (
+            !ufrag ||
+            !pwd ||
+            !hash ||
+            !fingerprint ||
+            !source ||
+            !sourceGroup
+        ) {
             return;
         }
 
@@ -71,6 +80,7 @@ export class BaseTGCalls<T> extends EventEmitter {
                 setup: 'active',
                 fingerprint,
                 source,
+                sourceGroup,
                 params: this.#params,
             });
         } catch (error) {
@@ -87,7 +97,7 @@ export class BaseTGCalls<T> extends EventEmitter {
         const conference = {
             sessionId,
             transport: joinVoiceCallResult.transport,
-            ssrcs: [{ ssrc: source }],
+            ssrcs: [{ ssrc: source, ssrc_group: sourceGroup }],
         };
 
         await this.#connection.setRemoteDescription({
