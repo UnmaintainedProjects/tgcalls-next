@@ -5,6 +5,7 @@
     "main": "lib/index.js",
     "scripts": {
         "build": "rm -rf lib/ && tsc",
+        "prepare": "npm run build",
         "test": "tsc --noEmit",
         "preversion": "npm run test",
         "docs": "typedoc src/*"
