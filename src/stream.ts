@@ -86,6 +86,7 @@ export class Stream extends EventEmitter {
     //#endregion
 
     //#region stop
+
     private _stopped = false;
 
     get stopped() {
@@ -96,12 +97,31 @@ export class Stream extends EventEmitter {
     stop() {
         this._stopped = true;
     }
+
     //#endregion
 
     //#region finish
 
     get finished() {
-        return this.audioFinished && this.videoFinished;
+        if (
+            this.audioReadable === undefined &&
+            this.videoReadable === undefined
+        ) {
+            return false;
+        }
+
+        if (
+            this.audioReadable !== undefined &&
+            this.videoReadable !== undefined
+        ) {
+            return this.audioFinished && this.videoFinished;
+        }
+
+        if (this.audioReadable !== undefined) {
+            return this.audioFinished;
+        }
+
+        return this.videoFinished;
     }
 
     private finish() {
