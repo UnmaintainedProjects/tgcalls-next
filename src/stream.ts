@@ -48,7 +48,7 @@ export class Stream extends EventEmitter {
         this.audioSource = new nonstandard.RTCAudioSource();
         this.audioTrack = this.audioSource.createTrack();
         this.audioOptions = {
-            bps: 15,
+            bps: 16,
             bitrate: 65000,
             channels: 2,
         };
