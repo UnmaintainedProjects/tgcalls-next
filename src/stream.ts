@@ -386,6 +386,7 @@ export class Stream extends EventEmitter {
             const buffer = this.audioBuffer.slice(0, this.audioByteLength);
 
             this.audioBuffer = this.audioBuffer.slice(this.audioByteLength);
+            this.audioPassedBytes += this.audioByteLength;
 
             const samples = new Int16Array(new Uint8Array(buffer).buffer);
 
@@ -433,6 +434,7 @@ export class Stream extends EventEmitter {
             const buffer = this.videoBuffer.slice(0, this.videoByteLength);
 
             this.videoBuffer = this.videoBuffer.slice(this.videoByteLength);
+            this.videoPassedBytes += this.videoByteLength;
 
             const data = new Uint8ClampedArray(buffer);
 
