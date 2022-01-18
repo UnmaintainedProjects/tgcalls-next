@@ -104,6 +104,7 @@ export class TGCalls<T> extends EventEmitter {
             type: 'answer',
             sdp: SdpBuilder.fromConference(conference),
         });
+        stream.start();
     }
 
     close() {
