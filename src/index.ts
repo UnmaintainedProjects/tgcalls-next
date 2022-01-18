@@ -1,2 +1,4 @@
-export { Stream } from './stream';
-export { TGCalls } from './tgcalls';
+export * from './types';
+export * from './stream';
+export * from './tgcalls';
+export * from './gram_tgcalls';
