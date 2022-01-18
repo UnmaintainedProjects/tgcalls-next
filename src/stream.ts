@@ -50,7 +50,7 @@ export class Stream extends EventEmitter {
         this.audioOptions = {
             bps: 16,
             bitrate: 65000,
-            channels: 2,
+            channels: 1,
         };
 
         this.videoBuffer = Buffer.alloc(0);
