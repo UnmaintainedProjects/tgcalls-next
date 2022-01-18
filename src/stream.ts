@@ -331,7 +331,7 @@ export class Stream extends EventEmitter {
             this.videoNeedsTime ||
             this.videoReadable === undefined
             ? 500
-            : 10;
+            : this.videoOptions.fps;
     }
 
     private get videoTime() {
