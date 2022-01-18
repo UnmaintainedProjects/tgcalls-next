@@ -6,9 +6,10 @@ import { AudioOptions, VideoOptions } from './types';
 
 export declare interface Stream {
     on(event: 'finish', listener: () => void): this;
-    on(event: 'finish-audio', listener: () => void): this;
-    on(event: 'finish-video', listener: () => void): this;
-    on(event: 'error', listener: (err: unknown) => void): this;
+    on(event: 'audio-finish', listener: () => void): this;
+    on(event: 'video-finish', listener: () => void): this;
+    on(event: 'audio-error', listener: (err: unknown) => void): this;
+    on(event: 'video-error', listener: (err: unknown) => void): this;
     on(event: string, listener: Function): this;
 }
 
@@ -418,7 +419,7 @@ export class Stream extends EventEmitter {
                     channelCount: this.audioOptions.channels,
                 });
             } catch (err) {
-                this.emit('error', err);
+                this.emit('audio-error', err);
             }
         }
 
@@ -428,7 +429,7 @@ export class Stream extends EventEmitter {
             this.audioBuffer.length < this.audioByteLength
         ) {
             this.audioFinished = true;
-            this.emit('finish-audio');
+            this.emit('audio-finish');
             this.finish();
         }
 
@@ -465,7 +466,7 @@ export class Stream extends EventEmitter {
                     height: this.videoOptions.height,
                 });
             } catch (err) {
-                this.emit('error', err);
+                this.emit('video-error', err);
             }
         }
 
@@ -475,7 +476,7 @@ export class Stream extends EventEmitter {
             this.videoBuffer.length < this.videoByteLength
         ) {
             this.videoFinished = true;
-            this.emit('finish-video');
+            this.emit('video-finish');
             this.finish();
         }
 
