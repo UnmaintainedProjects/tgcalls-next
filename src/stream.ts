@@ -434,9 +434,7 @@ export class Stream extends EventEmitter {
 
             this.videoBuffer = this.videoBuffer.slice(this.videoByteLength);
 
-            const data = new Uint8ClampedArray(
-                new Int16Array(new Uint8Array(buffer).buffer),
-            );
+            const data = new Uint8ClampedArray(buffer);
 
             try {
                 this.videoSource.onFrame({
