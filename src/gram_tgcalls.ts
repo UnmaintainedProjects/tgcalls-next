@@ -28,7 +28,7 @@ export class GramTGCalls extends EventEmitter {
     ) {
         super();
 
-        this.client.addEventHandler(this.updateHandler);
+        this.client.addEventHandler(this.updateHandler.bind(this));
     }
 
     private updateHandler(update: Api.TypeUpdate) {
