@@ -71,32 +71,29 @@ export class GramTGCalls extends EventEmitter {
 
             const tgcalls = new TGCalls(null);
 
-            let call: Api.InputGroupCall;
+            const { call, groupcallDefaultJoinAs } = await getFullChat(
+                this.client,
+                this.chat,
+            );
+
+            if (!call) {
+                throw new Error('No active call');
+            }
 
             tgcalls.joinVoiceCall = async payload => {
-                const fullChat = await getFullChat(this.client, this.chat);
-
-                if (!fullChat.call) {
-                    throw new Error('No active call');
-                }
-
-                call = fullChat.call;
-
                 return await joinCall(this.client, call, payload, {
-                    joinAs:
-                        params.join?.joinAs ??
-                        fullChat.groupcallDefaultJoinAs ??
-                        'me',
-                    videoStopped:
-                        params.join?.videoStopped ?? params.video !== undefined,
                     inviteHash: params.join?.inviteHash,
                     muted: params.join?.muted ?? params.audio !== undefined,
+                    joinAs:
+                        params.join?.joinAs ?? groupcallDefaultJoinAs ?? 'me',
+                    videoStopped:
+                        params.join?.videoStopped ?? params.video !== undefined,
                 });
             };
 
             await tgcalls.start(stream);
 
-            this.instances = { tgcalls, stream, call: call! };
+            this.instances = { tgcalls, stream, call };
         }
 
         if (params.audio) {
