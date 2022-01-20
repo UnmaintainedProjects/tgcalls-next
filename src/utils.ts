@@ -13,13 +13,14 @@ export function parseSdp(sdp: string): Sdp {
     const lookup = (prefix: string) => {
         for (let line of lines) {
             if (line.startsWith(prefix)) {
-                return line.substr(prefix.length);
+                return line.substring(prefix.length);
             }
         }
         return null;
     };
 
-    const rawSource = lookup('a=ssrc:');
+    const rawAudioSource = lookup('a=ssrc:');
+    const rawVideoSource = lookup('a=ssrc-group:FID ');
 
     return {
         fingerprint: lookup('a=fingerprint:')?.split(' ')[1] ?? null,
@@ -27,11 +28,14 @@ export function parseSdp(sdp: string): Sdp {
         setup: lookup('a=setup:'),
         pwd: lookup('a=ice-pwd:'),
         ufrag: lookup('a=ice-ufrag:'),
-        source: rawSource ? Number(rawSource.split(' ')[0]) : null,
+        source: rawAudioSource ? Number(rawAudioSource.split(' ')[0]) : null,
+        sourceGroup: rawVideoSource
+            ? rawVideoSource.split(' ').map(Number)
+            : null,
     };
 }
 
-// gram-tgcalls utils
+//#region gram-tgcalls
 
 export async function getFullChat(
     client: TelegramClient,
@@ -60,7 +64,7 @@ export async function joinCall(
     client: TelegramClient,
     call: Api.InputGroupCall,
     payload: JoinVoiceCallParams<any>,
-    params?: JoinParams,
+    params: JoinParams,
 ): Promise<JoinVoiceCallResponse> {
     // @ts-ignore
     const { updates } = await client.invoke(
@@ -78,11 +82,15 @@ export async function joinCall(
                         },
                     ],
                     ssrc: payload.source,
+                    'ssrc-groups': [
+                        { semantics: 'FID', sources: payload.sourceGroup },
+                    ],
                 }),
             }),
-            joinAs: params?.joinAs || 'me',
-            muted: params?.muted || false,
-            inviteHash: params?.inviteHash,
+            joinAs: params.joinAs,
+            muted: params.muted,
+            videoStopped: params.videoStopped,
+            inviteHash: params.inviteHash,
         }),
     );
 
@@ -116,3 +124,5 @@ export function editParticipant(
         }),
     );
 }
+
+//#endregion

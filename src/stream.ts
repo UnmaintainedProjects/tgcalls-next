@@ -1,158 +1,487 @@
-import { EventEmitter } from 'events';
 import { Readable } from 'stream';
-import { nonstandard, RTCAudioSource } from 'wrtc';
-import { StreamOptions } from './types';
+import { EventEmitter } from 'events';
+import { nonstandard, RTCAudioSource, RTCVideoSource } from 'wrtc';
+
+import { AudioOptions, VideoOptions } from './types';
 
 export declare interface Stream {
-    on(event: 'pause', listener: (paused: boolean) => void): this;
     on(event: 'finish', listener: () => void): this;
-    on(event: 'almost-finished', listener: () => void): this;
-    on(event: 'error', listener: (error: Error) => void): this;
+    on(event: 'audio-finish', listener: () => void): this;
+    on(event: 'video-finish', listener: () => void): this;
+    on(event: 'audio-error', listener: (err: unknown) => void): this;
+    on(event: 'video-error', listener: (err: unknown) => void): this;
     on(event: string, listener: Function): this;
 }
 
 export class Stream extends EventEmitter {
-    private readonly source: RTCAudioSource;
-    private readable?: Readable;
-    private cache: Buffer;
-    private _paused = false;
-    private _finished = true;
-    private _stopped = false;
-    private _finishedLoading = false;
-    private _emittedAlmostFinished = false;
+    //#region audio
 
-    readonly bitsPerSample: number;
-    readonly sampleRate: number;
-    readonly channelCount: number;
-    private almostFinishedTrigger: number;
+    private audioBuffer: Buffer;
+    private readonly audioSource: RTCAudioSource;
+    public readonly audioTrack: MediaStreamTrack;
+    public audioOptions: AudioOptions;
 
-    constructor(readable?: Readable, opts?: StreamOptions) {
+    private audioFinished = false;
+    private audioFinishedLoading = false;
+    private audioPassedBytes = 0;
+
+    //#endregion
+
+    //#region video
+
+    private videoBuffer: Buffer;
+    private readonly videoSource: RTCVideoSource;
+    public readonly videoTrack: MediaStreamTrack;
+    public videoOptions: VideoOptions;
+
+    private videoFinished = false;
+    private videoFinishedLoading = false;
+    private videoPassedBytes = 0;
+
+    //#endregion
+
+    //#region constructor
+
+    constructor(public lipSync = false) {
         super();
 
-        this.bitsPerSample = opts?.bitsPerSample ?? 16;
-        this.sampleRate = opts?.sampleRate ?? 65000;
-        this.channelCount = opts?.channelCount ?? 1;
-        this.almostFinishedTrigger = opts?.almostFinishedTrigger ?? 20;
+        this.audioBuffer = Buffer.alloc(0);
+        this.audioSource = new nonstandard.RTCAudioSource();
+        this.audioTrack = this.audioSource.createTrack();
+        this.audioOptions = {
+            bps: 16,
+            bitrate: 65000,
+            channels: 1,
+        };
 
-        this.source = new nonstandard.RTCAudioSource();
-        this.cache = Buffer.alloc(0);
-
-        this.setReadable(readable);
-        this.processData();
+        this.videoBuffer = Buffer.alloc(0);
+        this.videoSource = new nonstandard.RTCVideoSource();
+        this.videoTrack = this.videoSource.createTrack();
+        this.videoOptions = {
+            fps: 24,
+            width: 640,
+            height: 360,
+        };
     }
 
-    setReadable(readable?: Readable) {
-        if (this._stopped) {
-            throw new Error('Cannot set readable when stopped');
+    //#endregion
+
+    //#region start
+
+    private _started = false;
+
+    get started() {
+        return this._started;
+    }
+
+    start() {
+        if (this.started) {
+            throw new Error('Already started');
         }
 
-        if (this.readable) {
-            this.readable.removeListener('data', this.dataListener);
-            this.readable.removeListener('end', this.endListener);
-        }
-
-        this.cache = Buffer.alloc(0);
-
-        if (readable) {
-            this._finished = false;
-            this._finishedLoading = false;
-            this._emittedAlmostFinished = false;
-            this.readable = readable;
-
-            this.readable.addListener('data', this.dataListener);
-            this.readable.addListener('end', this.endListener);
-        }
+        this._started = true;
+        this.processAudio();
+        this.processVideo();
     }
 
-    pause() {
-        if (this._stopped) {
-            throw new Error('Cannot pause when stopped');
-        }
+    //#endregion
 
-        this._paused = !this._paused;
-        this.emit('pause', this._paused);
-    }
+    //#region stop
 
-    get paused() {
-        return this._paused;
-    }
-
-    finish() {
-        this._finished = true;
-        this.emit('finish');
-    }
-
-    get finished() {
-        return this._finished;
-    }
-
-    stop() {
-        this._stopped = true;
-        this.finish();
-    }
+    private _stopped = false;
 
     get stopped() {
         return this._stopped;
     }
 
-    createTrack() {
-        return this.source.createTrack();
+    // Cannot start again after stopping.
+    stop() {
+        this._stopped = true;
     }
 
-    private dataListener = ((data: any) => {
-        this.cache = Buffer.concat([this.cache, data]);
+    //#endregion
+
+    //#region finish
+
+    get finished() {
+        if (
+            this.audioReadable === undefined &&
+            this.videoReadable === undefined
+        ) {
+            return false;
+        }
+
+        if (
+            this.audioReadable !== undefined &&
+            this.videoReadable !== undefined
+        ) {
+            return this.audioFinished && this.videoFinished;
+        }
+
+        if (this.audioReadable !== undefined) {
+            return this.audioFinished;
+        }
+
+        return this.videoFinished;
+    }
+
+    private finish() {
+        if (this.finished) {
+            this.emit('finish');
+        }
+    }
+
+    //#endregion
+
+    //#region pause
+
+    private _paused = false;
+
+    get paused() {
+        return this._paused;
+    }
+
+    pause() {
+        if (this.paused) {
+            return false;
+        }
+
+        this._paused = true;
+        return true;
+    }
+
+    resume() {
+        if (!this.paused) {
+            return false;
+        }
+
+        this._paused = false;
+        return true;
+    }
+
+    //#endregion
+
+    //#region audio
+
+    private audioReadable?: Readable;
+
+    private audioDataListener = ((data: any) => {
+        this.audioBuffer = Buffer.concat([this.audioBuffer, data]);
     }).bind(this);
 
-    private endListener = (() => {
-        this._finishedLoading = true;
+    private audioEndListener = (() => {
+        this.audioFinishedLoading = true;
     }).bind(this);
 
-    private processData() {
-        if (this._stopped) {
+    setAudio(readable: Readable, destroyPrevious = true) {
+        if (this.stopped) {
+            throw new Error('Cannot set audio when stopped');
+        }
+
+        if (this.audioReadable) {
+            this.audioReadable.removeListener('data', this.audioDataListener);
+            this.audioReadable.removeListener('end', this.audioEndListener);
+
+            if (destroyPrevious) {
+                this.audioReadable.destroy();
+            }
+        }
+
+        this.audioFinished = false;
+        this.audioFinishedLoading = false;
+        this.audioPassedBytes = 0;
+
+        this.audioReadable = readable;
+        this.audioReadable.addListener('data', this.audioDataListener);
+        this.audioReadable.addListener('end', this.audioEndListener);
+    }
+
+    removeAudio(destroy = true) {
+        if (this.audioReadable) {
+            this.audioReadable.removeListener('data', this.audioDataListener);
+            this.audioReadable.removeListener('end', this.audioEndListener);
+
+            if (destroy) {
+                this.audioReadable.destroy();
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private get audioByteLength() {
+        return (
+            ((this.audioOptions.bitrate * this.audioOptions.bps) / 8 / 100) *
+            this.audioOptions.channels
+        );
+    }
+
+    private get audioNeedsTime() {
+        if (this.audioFinishedLoading) {
+            return false;
+        }
+
+        return this.audioBuffer.length < this.audioByteLength * 50;
+    }
+
+    mute() {
+        if (!this.audioTrack.enabled) {
+            return false;
+        }
+
+        this.audioTrack.enabled = false;
+        return true;
+    }
+
+    unmute() {
+        if (this.audioTrack.enabled) {
+            return false;
+        }
+
+        this.audioTrack.enabled = true;
+        return true;
+    }
+
+    private get audioNeededTime() {
+        return this.audioFinished ||
+            this.paused ||
+            this.audioNeedsTime ||
+            this.audioReadable === undefined
+            ? 500
+            : 10;
+    }
+
+    private get audioTime() {
+        if (this.audioReadable === undefined || this.audioFinished) {
+            return undefined;
+        }
+
+        return Math.ceil(
+            this.audioPassedBytes /
+                this.audioByteLength /
+                (0.0001 / this.audioNeededTime),
+        );
+    }
+
+    private audioDiff(): [boolean, number] {
+        if (this.lipSync && this.videoTime !== undefined && !this.paused) {
+            const time = this.audioTime;
+            const videoTime = this.videoTime;
+
+            if (time !== undefined && videoTime !== undefined) {
+                if (time > videoTime) {
+                    return [true, (time - videoTime) * 10000];
+                } else if (this.videoNeedsTime && videoTime > time) {
+                    return [true, 0];
+                }
+            }
+        }
+
+        return [false, 0];
+    }
+
+    //#endregion
+
+    //#region video
+
+    private videoReadable?: Readable;
+
+    private videoDataListener = ((data: any) => {
+        this.videoBuffer = Buffer.concat([this.videoBuffer, data]);
+    }).bind(this);
+
+    private videoEndListener = (() => {
+        this.videoFinishedLoading = true;
+    }).bind(this);
+
+    setVideo(readable: Readable, destroyPrevious = true) {
+        if (this.stopped) {
+            throw new Error('Cannot set video when stopped');
+        }
+
+        if (this.videoReadable) {
+            this.videoReadable.removeListener('data', this.videoDataListener);
+            this.videoReadable.removeListener('end', this.videoEndListener);
+
+            if (destroyPrevious) {
+                this.videoReadable.destroy();
+            }
+        }
+
+        this.videoFinished = false;
+        this.videoFinishedLoading = false;
+        this.videoPassedBytes = 0;
+
+        this.videoReadable = readable;
+        this.videoReadable.addListener('data', this.videoDataListener);
+        this.videoReadable.addListener('end', this.videoEndListener);
+    }
+
+    removeVideo(destroy = true) {
+        if (this.videoReadable) {
+            this.videoReadable.removeListener('data', this.videoDataListener);
+            this.videoReadable.removeListener('end', this.videoEndListener);
+
+            if (destroy) {
+                this.videoReadable.destroy();
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private get videoByteLength() {
+        return 1.5 * this.videoOptions.width * this.videoOptions.height;
+    }
+
+    private get videoNeedsTime() {
+        if (this.videoFinishedLoading) {
+            return false;
+        }
+
+        return this.videoBuffer.length < this.videoByteLength * 0.3;
+    }
+
+    private get videoNeededTime() {
+        return this.videoFinished ||
+            this.paused ||
+            this.videoNeedsTime ||
+            this.videoReadable === undefined
+            ? 500
+            : 1000 / this.videoOptions.fps;
+    }
+
+    private get videoTime() {
+        if (this.videoReadable === undefined || this.videoFinished) {
+            return undefined;
+        }
+
+        return Math.ceil(
+            this.videoPassedBytes /
+                this.videoByteLength /
+                (0.0001 / this.videoNeededTime),
+        );
+    }
+
+    private videoDiff(): [boolean, number] {
+        if (this.lipSync && this.audioTime !== undefined && !this.paused) {
+            const time = this.videoTime;
+            const audioTime = this.audioTime;
+
+            if (time !== undefined && audioTime !== undefined) {
+                if (time > audioTime) {
+                    return [true, (time - audioTime) * 10000];
+                } else if (this.audioNeedsTime && audioTime > time) {
+                    return [true, 0];
+                }
+            }
+        }
+
+        return [false, 0];
+    }
+
+    //#endregion
+
+    //#region process
+
+    private processAudio() {
+        if (this.stopped) {
             return;
         }
 
-        const byteLength =
-            ((this.sampleRate * this.bitsPerSample) / 8 / 100) *
-            this.channelCount;
+        const [needsTime, diff] = this.audioDiff();
+        const ms = this.audioNeededTime - diff;
 
         if (
-            !this._paused &&
-            !this._finished &&
-            (this.cache.length >= byteLength || this._finishedLoading)
+            !this.paused &&
+            !this.audioFinished &&
+            !needsTime &&
+            (this.audioBuffer.length >= this.audioByteLength ||
+                this.audioFinishedLoading) &&
+            !this.audioNeedsTime
         ) {
-            const buffer = this.cache.slice(0, byteLength);
+            const buffer = this.audioBuffer.slice(0, this.audioByteLength);
 
-            this.cache = this.cache.slice(byteLength);
+            this.audioBuffer = this.audioBuffer.slice(this.audioByteLength);
+            this.audioPassedBytes += this.audioByteLength;
 
             const samples = new Int16Array(new Uint8Array(buffer).buffer);
 
             try {
-                this.source.onData({
-                    bitsPerSample: this.bitsPerSample,
-                    sampleRate: this.sampleRate,
-                    channelCount: this.channelCount,
-                    numberOfFrames: samples.length,
+                this.audioSource.onData({
                     samples,
+                    bitsPerSample: this.audioOptions.bps,
+                    sampleRate: this.audioOptions.bitrate,
+                    channelCount: this.audioOptions.channels,
                 });
-            } catch (error) {
-                this.emit('error', error);
+            } catch (err) {
+                this.emit('audio-error', err);
             }
         }
 
-        if (!this._finished && this._finishedLoading) {
-            if (
-                !this._emittedAlmostFinished &&
-                this.cache.length <
-                    byteLength + this.almostFinishedTrigger * this.sampleRate
-            ) {
-                this._emittedAlmostFinished = true;
-                this.emit('almost-finished');
-            } else if (this.cache.length < byteLength) {
-                this.finish();
-            }
+        if (
+            !this.audioFinished &&
+            this.audioFinishedLoading &&
+            this.audioBuffer.length < this.audioByteLength
+        ) {
+            this.audioFinished = true;
+            this.emit('audio-finish');
+            this.finish();
         }
 
-        setTimeout(() => this.processData(), 10);
+        setTimeout(() => this.processAudio(), ms > 0 ? ms : 0);
     }
+
+    private processVideo() {
+        if (this.stopped) {
+            return;
+        }
+
+        const [needsTime, diff] = this.videoDiff();
+        const ms = this.videoNeededTime - diff;
+
+        if (
+            !this.paused &&
+            !this.videoFinished &&
+            !needsTime &&
+            (this.videoBuffer.length >= this.videoByteLength ||
+                this.videoFinishedLoading) &&
+            !this.videoNeedsTime
+        ) {
+            const buffer = this.videoBuffer.slice(0, this.videoByteLength);
+
+            this.videoBuffer = this.videoBuffer.slice(this.videoByteLength);
+            this.videoPassedBytes += this.videoByteLength;
+
+            const data = new Uint8ClampedArray(buffer);
+
+            try {
+                this.videoSource.onFrame({
+                    data,
+                    width: this.videoOptions.width,
+                    height: this.videoOptions.height,
+                });
+            } catch (err) {
+                this.emit('video-error', err);
+            }
+        }
+
+        if (
+            !this.videoFinished &&
+            this.videoFinishedLoading &&
+            this.videoBuffer.length < this.videoByteLength
+        ) {
+            this.videoFinished = true;
+            this.emit('video-finish');
+            this.finish();
+        }
+
+        setTimeout(() => this.processVideo(), ms > 0 ? ms : 0);
+    }
+
+    //#endregion
 }
