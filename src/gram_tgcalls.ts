@@ -177,4 +177,13 @@ export class GramTGCalls extends EventEmitter {
     get stopped() {
         return this.instances ? this.instances.stream.stopped : null;
     }
+
+    get time() {
+        return this.instances
+            ? {
+                  audio: this.instances.stream.audioTime,
+                  video: this.instances.stream.videoTime,
+              }
+            : {};
+    }
 }
