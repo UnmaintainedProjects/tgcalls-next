@@ -125,7 +125,19 @@ export class Stream extends EventEmitter {
         return this.videoFinished;
     }
 
-    private finish() {
+    finish() {
+        if (this.audioReadable !== undefined) {
+            this.audioFinished = true;
+        }
+
+        if (this.videoReadable !== undefined) {
+            this.videoFinished = true;
+        }
+
+        this._finish();
+    }
+
+    private _finish() {
         if (this.finished) {
             this.emit('finish');
         }
@@ -430,7 +442,7 @@ export class Stream extends EventEmitter {
         ) {
             this.audioFinished = true;
             this.emit('audio-finish');
-            this.finish();
+            this._finish();
         }
 
         setTimeout(() => this.processAudio(), ms > 0 ? ms : 0);
@@ -477,7 +489,7 @@ export class Stream extends EventEmitter {
         ) {
             this.videoFinished = true;
             this.emit('video-finish');
-            this.finish();
+            this._finish();
         }
 
         setTimeout(() => this.processVideo(), ms > 0 ? ms : 0);
