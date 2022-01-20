@@ -265,7 +265,7 @@ export class Stream extends EventEmitter {
             : 10;
     }
 
-    private get audioTime() {
+    get audioTime() {
         if (this.audioReadable === undefined || this.audioFinished) {
             return undefined;
         }
@@ -367,7 +367,7 @@ export class Stream extends EventEmitter {
             : 1000 / this.videoOptions.fps;
     }
 
-    private get videoTime() {
+    get videoTime() {
         if (this.videoReadable === undefined || this.videoFinished) {
             return undefined;
         }
