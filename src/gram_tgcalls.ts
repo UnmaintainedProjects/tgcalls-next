@@ -87,7 +87,7 @@ export class GramTGCalls extends EventEmitter {
                     joinAs:
                         params.join?.joinAs ?? groupcallDefaultJoinAs ?? 'me',
                     videoStopped:
-                        params.join?.videoStopped ?? params.video !== undefined,
+                        params.join?.videoStopped ?? params.video === undefined,
                 });
             };
 
