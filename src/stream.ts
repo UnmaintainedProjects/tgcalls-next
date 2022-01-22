@@ -199,6 +199,8 @@ export class Stream extends EventEmitter {
             }
         }
 
+        this.audioBuffer = Buffer.alloc(0);
+
         this.audioFinished = false;
         this.audioFinishedLoading = false;
         this.audioPassedBytes = 0;
@@ -321,6 +323,8 @@ export class Stream extends EventEmitter {
                 this.videoReadable.destroy();
             }
         }
+
+        this.videoBuffer = Buffer.alloc(0);
 
         this.videoFinished = false;
         this.videoFinishedLoading = false;
