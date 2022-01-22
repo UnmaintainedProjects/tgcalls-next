@@ -121,12 +121,9 @@ export class GramTGCalls extends EventEmitter {
 
     //#endregion
 
-    //#region editParticipant
+    //#region edit
 
-    async editParticipant(
-        params: EditParams,
-        participant: Api.TypeEntityLike = 'me',
-    ) {
+    async edit(params: EditParams, participant: Api.TypeEntityLike = 'me') {
         if (!this.instances) {
             return false;
         }
@@ -139,8 +136,6 @@ export class GramTGCalls extends EventEmitter {
         );
         return true;
     }
-
-    edit = this.editParticipant;
 
     //#endregion
 
