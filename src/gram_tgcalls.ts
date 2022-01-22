@@ -99,14 +99,14 @@ export class GramTGCalls extends EventEmitter {
         if (params.audio) {
             this.instances.stream.setAudio(
                 params.audio,
-                params.destroyPrevious,
+                params.destroyPrevious ?? true,
             );
         }
 
         if (params.video) {
             this.instances.stream.setVideo(
                 params.video,
-                params.destroyPrevious,
+                params.destroyPrevious ?? true,
             );
         }
 
