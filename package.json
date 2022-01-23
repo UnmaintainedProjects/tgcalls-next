@@ -4,7 +4,7 @@
     "description": "Audio-only fork of tgcallsjs with direct GramJS support.",
     "main": "lib/index.js",
     "scripts": {
-        "build": "rimraf lib dist && tsc && rollup -c rollup.config.js",
+        "build": "rimraf lib && tsc",
         "prepare": "npm run build",
         "test": "tsc --noEmit",
         "preversion": "npm run test",
