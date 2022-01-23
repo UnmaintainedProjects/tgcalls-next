@@ -4,7 +4,7 @@
     "description": "Audio-only fork of tgcallsjs with direct GramJS support.",
     "main": "lib/index.js",
     "scripts": {
-        "build": "rm -rf lib/ && tsc",
+        "build": "rimraf lib dist && tsc && rollup -c rollup.config.js",
         "prepare": "npm run build",
         "test": "tsc --noEmit",
         "preversion": "npm run test",
@@ -22,6 +22,7 @@
     "homepage": "https://github.com/tgcalls-next/tgcalls#readme",
     "devDependencies": {
         "@types/node": "^17.0.8",
+        "rimraf": "^3.0.2",
         "typedoc": "^0.22.10",
         "typescript": "^4.5.4"
     },
