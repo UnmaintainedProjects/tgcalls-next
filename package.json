@@ -1,6 +1,6 @@
 {
     "name": "tgcalls-next",
-    "version": "0.0.0-rc.17",
+    "version": "0.0.0-rc.18",
     "description": "Community fork of tgcallsjs with built-in GramJS support.",
     "main": "lib/index.js",
     "scripts": {
