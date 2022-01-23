@@ -32,33 +32,33 @@ const client = new TelegramClient(session, 0, "", {});
 
 ## Required Media Properties
 
-# Audio
+### Audio
 
 - Format: `s16le`
 - Channels: 1
 - Bitrate: 65K or what you provided in the `StreamOptions`
 
-# Video
+### Video
 
 - Format: `rawvideo`
 - Dimensions: min 640x360, max 1280x720
 - FPS: min 24, max 30
 
-### Conversion w/ FFmpeg
+## Conversion w/ FFmpeg
 
-# Audio
+### Audio
 
 ```bash
 ffmpeg -i [input] -f s16le -ac 1 -ar 65K [output]
 ```
 
-# Video
+### Video
 
 ```bash
 ffmpeg -i [input] -f rawvideo -r 24 -vf scale=640:-1 [output]
 ```
 
-# Both
+### Both
 
 ```bash
 ffmpeg -i [input video with sound] -f rawvideo -r 24 -vf scale=640:-1 [video output] -f s16le -ac 1 -ar 65K [audio output]
