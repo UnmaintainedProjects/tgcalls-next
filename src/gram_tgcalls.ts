@@ -36,12 +36,15 @@ export class GramTGCalls extends EventEmitter {
         this.client.addEventHandler(this.updateHandler.bind(this));
     }
 
-    private updateHandler(update: Api.TypeUpdate) {
+    private async updateHandler(update: Api.TypeUpdate) {
         if (!this.instances) return;
 
         if (update instanceof Api.UpdateGroupCall) {
             if (update.call instanceof Api.GroupCallDiscarded) {
-                if (this.instances.call.id.equals(update.call.id)) {
+                if (
+                    (await this.client.getPeerId(this.chat, false)) ==
+                    (await this.client.getPeerId(update.chatId, false))
+                ) {
                     this.instances = undefined;
                 }
             }
