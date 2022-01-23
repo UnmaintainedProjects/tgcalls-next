@@ -1,7 +1,7 @@
 {
     "name": "tgcalls-next",
     "version": "0.0.0-rc.17",
-    "description": "Audio-only fork of tgcallsjs with direct GramJS support.",
+    "description": "Community fork of tgcallsjs with built-in GramJS support.",
     "main": "lib/index.js",
     "scripts": {
         "build": "rimraf lib && tsc",
@@ -14,7 +14,10 @@
         "type": "git",
         "url": "git+https://github.com/tgcalls-next/tgcalls.git"
     },
-    "author": "Andrew Lane <contact@lungers.com>",
+    "authors": [
+        "Andrew Lane <contact@lungers.com>",
+        "Roj <ez@roj.im>"
+    ],
     "license": "LGPL-3.0",
     "bugs": {
         "url": "https://github.com/tgcalls-next/tgcalls/issues"
