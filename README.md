@@ -2,7 +2,7 @@
 
 [![npm](https://img.shields.io/npm/v/tgcalls-next)](https://npm.im/tgcalls-next)
 
-TGCalls Next is a non-official fork of the original
+TGCalls Next is a community fork of
 [tgcallsjs](https://github.com/tgcallsjs/tgcalls), which is merged with
 [gram-tgcalls](https://github.com/tgcallsjs/gram-tgcalls) to support GramJS
 directly.
@@ -34,15 +34,15 @@ const client = new TelegramClient(session, 0, "", {});
 
 # Audio
 
--   Format: `s16le`
--   Channels: 1
--   Bitrate: 65K or what you provided in the `StreamOptions`
+- Format: `s16le`
+- Channels: 1
+- Bitrate: 65K or what you provided in the `StreamOptions`
 
 # Video
 
--   Format: `rawvideo`
--   Dimensions: min 640x360, max 1280x720
--   FPS: min 24, max 30
+- Format: `rawvideo`
+- Dimensions: min 640x360, max 1280x720
+- FPS: min 24, max 30
 
 ### Conversion w/ FFmpeg
 
