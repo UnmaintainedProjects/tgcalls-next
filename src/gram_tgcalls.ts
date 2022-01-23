@@ -42,8 +42,8 @@ export class GramTGCalls extends EventEmitter {
         if (update instanceof Api.UpdateGroupCall) {
             if (update.call instanceof Api.GroupCallDiscarded) {
                 if (
-                    (await this.client.getPeerId(this.chat)) ==
-                    (await this.client.getPeerId(update.chatId))
+                    (await this.client.getPeerId(this.chat, false)) ==
+                    (await this.client.getPeerId(update.chatId, false))
                 ) {
                     this.instances = undefined;
                 }
