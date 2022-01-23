@@ -22,6 +22,11 @@ export class GramTGCalls extends EventEmitter {
         call: Api.TypeInputGroupCall;
     };
 
+    /**
+     * Constructs a new `GramTGCalls` instance.
+     * @param client Your GramJS client which will be authenticating as a user.
+     * @param chat The username/ID of the chat/channel which you will be interacting with its call.
+     */
     constructor(
         public client: TelegramClient,
         public chat: Api.TypeEntityLike,
@@ -45,6 +50,10 @@ export class GramTGCalls extends EventEmitter {
 
     //#region stream
 
+    /**
+     * Starts streaming the provided audio and/or video with their own options in the call, if not already streaming.
+     * Otherwise, replaces the current streams and updates the options.
+     */
     async stream(params: {
         audio?: Readable;
         video?: Readable;
@@ -123,6 +132,12 @@ export class GramTGCalls extends EventEmitter {
 
     //#region edit
 
+    /**
+     * Edits a participant of the call.
+     * @param params The new parameters of the participant.
+     * @param participant The identifier of the participant to edit. Defaults to self.
+     * @returns Returns `true` on success or `false` if not in call.
+     */
     async edit(params: EditParams, participant: Api.TypeEntityLike = 'me') {
         if (!this.instances) {
             return false;
@@ -139,6 +154,10 @@ export class GramTGCalls extends EventEmitter {
 
     //#endregion
 
+    /**
+     * Stops streaming and leaves the call.
+     * @returns Returns `true` on success or `false` if not in call.
+     */
     async stop() {
         if (!this.instances) return false;
 
@@ -149,18 +168,34 @@ export class GramTGCalls extends EventEmitter {
         return true;
     }
 
+    /**
+     * Pauses the audio and/or video.
+     * @returns Returns `true` on success, `false` if already paused and `null` if not in call.
+     */
     pause() {
         return this.instances ? this.instances.stream.pause() : null;
     }
 
+    /**
+     * Resumes the audio and/or video.
+     * @returns Returns `true` on success, `false` if not paused or `null` if not in call.
+     */
     resume() {
         return this.instances ? this.instances.stream.resume() : null;
     }
 
+    /**
+     * Mutes the audio.
+     * @returns Returns `true` on success, `false` if already muted or `null` if not in call.
+     */
     mute() {
         return this.instances ? this.instances.stream.mute() : null;
     }
 
+    /**
+     * Unmutes the audio.
+     * @returns Returns `true` on success, `false` if not muted or `null` if not in call.
+     */
     unmute() {
         return this.instances ? this.instances.stream.unmute() : null;
     }
