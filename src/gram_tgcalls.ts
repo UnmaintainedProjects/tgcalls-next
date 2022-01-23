@@ -12,6 +12,7 @@ export declare interface GramTGCalls {
     on(event: 'video-finish', listener: () => void): this;
     on(event: 'audio-error', listener: (err: unknown) => void): this;
     on(event: 'video-error', listener: (err: unknown) => void): this;
+    on(event: 'call-discarded', listener: (err: unknown) => void): this;
     on(event: string, listener: Function): this;
 }
 
@@ -46,6 +47,7 @@ export class GramTGCalls extends EventEmitter {
                     (await this.client.getPeerId(update.chatId, false))
                 ) {
                     this.instances = undefined;
+                    this.emit('call-discarded');
                 }
             }
         }
